@@ -494,9 +494,6 @@
         display: flex;
       }
 
-      /* Reply quote shown inside a message bubble that is itself a reply.
-         Displays who the original sender was and a short snippet of what
-         they said, and is clickable to jump to that original message. */
       .reply-quote {
         display: flex;
         flex-direction: column;
@@ -1733,18 +1730,7 @@
       let selectedMessageForContext = null;
       let editingMessageId = null;
       let myEmail = null;
-
-      // Messages we've sent optimistically (before the server has echoed
-      // them back). Keyed by the temporary clientId we generated locally.
-      // While a clientId is in here, its bubble shows a pending clock icon;
-      // once the "new-message" ack arrives we swap the bubble's DOM id from
-      // the clientId over to the real server-assigned message id.
       let pendingClientMessages = {};
-
-      // ---------------------------------------------------------------
-      // Message pagination state (10 at a time — see MESSAGES_PAGE_SIZE
-      // on the server). Reset every time a different chat is opened.
-      // ---------------------------------------------------------------
       let activeChatHasMore = false;
       let activeChatOldestMessageId = null;
       let loadingMoreMessages = false;
@@ -1752,10 +1738,6 @@
       function genClientId() {
         return "c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
       }
-
-      // Basic HTML-escaping so message text (and reply-quote text, which is
-      // rendered via innerHTML) can never inject markup/scripts into the
-      // page — messages are attacker-controlled input from other users.
       function escapeHtml(str) {
         if (!str) return "";
         return String(str)
@@ -1879,11 +1861,6 @@
           location.reload();
         });
 
-      // -----------------------------------------------------------------
-      // "Add your email" popup — shown after auth-success/sync-data when
-      // the account has no email on file yet (e.g. it was created before
-      // email was required). Can also be reopened from Settings.
-      // -----------------------------------------------------------------
       const emailModal = document.getElementById("emailModal");
       const emailModalInput = document.getElementById("emailModalInput");
       const emailModalError = document.getElementById("emailModalError");
@@ -1926,11 +1903,6 @@
         ws.send(JSON.stringify({ type: "set-email", email }));
       }
 
-      // -----------------------------------------------------------------
-      // "پسورد خود را فراموش کردم" flow — step 1 emails a 6-digit code to
-      // the account's email, step 2 checks that code and sets a new
-      // password. Both steps live in the same modal.
-      // -----------------------------------------------------------------
       const forgotPasswordModal = document.getElementById(
         "forgotPasswordModal",
       );
@@ -2044,12 +2016,6 @@
         );
       }
 
-      // -----------------------------------------------------------------
-      // Owner-only "delete group" flow — step 1 asks the server to email a
-      // 6-digit confirmation code to the owner's account email, step 2
-      // submits that code, which (if correct) permanently deletes the
-      // group/channel for every member.
-      // -----------------------------------------------------------------
       const deleteGroupModal = document.getElementById("deleteGroupModal");
       const deleteGroupStepConfirm = document.getElementById(
         "deleteGroupStepConfirm",
@@ -2177,11 +2143,6 @@
         if (isYesterday) return "دیروز";
         return d.toLocaleDateString("fa-IR");
       }
-
-      // Absolute "last seen" timestamp, e.g. "۱۷ مرداد ۱۴۰۵، ۱۳:۰۴" — used
-      // wherever we show when an offline contact was last online. Rendered
-      // in the Persian (Jalali/Shamsi) calendar with Persian digits, since
-      // that's the calendar Persian-speaking users expect.
       const persianDateFormatter = new Intl.DateTimeFormat("fa-IR", {
         year: "numeric",
         month: "long",
@@ -2280,9 +2241,6 @@
           closeGroupModal();
         });
 
-      // Opens the members modal for the currently active group/announcement.
-      // Works for both chat types now — announcements stay owner/admin-only
-      // server-side, groups are viewable by any member.
       function fetchChatMembers() {
         if (
           !activeTargetContact ||
@@ -2587,9 +2545,6 @@
               screenMain.classList.add("active");
               syncSettingsUI();
               trySendFcmToken();
-              // Accounts created before email was required (or ones that
-              // dismissed the popup last time) won't have an email on
-              // file yet — prompt for one now.
               if (!myEmail) {
                 openEmailModal();
               }
@@ -2694,10 +2649,6 @@
                   nameSpan.appendChild(tag);
                 }
                 row.appendChild(nameSpan);
-
-                // Only the owner ("صاحب") can promote a member to "ادمین"
-                // or demote an existing admin — no one else, including
-                // other admins, can change ranks.
                 if (isOwner && !m.isOwner) {
                   const actions = document.createElement("div");
                   actions.className = "member-actions";
@@ -2738,8 +2689,6 @@
 
               document.getElementById("addMemberRow").style.display =
                 isAdmin || isOwner ? "flex" : "none";
-              // Only the owner can delete the group, and only via the
-              // email-verification flow (see deleteGroupModal handlers).
               document.getElementById("deleteGroupBtn").style.display = isOwner
                 ? "block"
                 : "none";
@@ -2792,9 +2741,6 @@
               break;
 
             case "message-status":
-              // Server-confirmed delivery: the recipient's device/browser
-              // now has this message (they may not have opened the chat
-              // yet). Never downgrade an already-"read" bubble.
               (msg.messageIds || []).forEach((id) => {
                 const el = document.getElementById("msg-" + id);
                 if (el && el.dataset.status !== "read") {
@@ -3179,8 +3125,6 @@
         activeTargetContact = username;
         clearTypingIndicator();
 
-        // Reset pagination state for the newly opened chat — it's
-        // re-populated once the first "chat-history" page arrives.
         activeChatHasMore = false;
         activeChatOldestMessageId = null;
         loadingMoreMessages = false;
@@ -3293,11 +3237,6 @@
         }
       });
 
-      // Builds the optimistic local echo of an outgoing message (shown
-      // instantly, before the server has acknowledged it) and wires up the
-      // websocket send. Used for text, files/media, voice notes, and
-      // locations alike so every outgoing message gets the same
-      // pending-clock -> single-check -> double-check(-blue) lifecycle.
       function sendChatMessage(payload) {
         if (!activeTargetContact || !ws || ws.readyState !== WebSocket.OPEN)
           return;
@@ -3417,11 +3356,6 @@
         history.forEach((msg) => appendMessage(msg));
       }
 
-      // Updates just the ticks/status portion of an already-rendered
-      // outgoing bubble, without touching its text/media content. Used both
-      // when a pending bubble gets its first server ack and later when a
-      // "message-status" (delivered) or "messages-read" (read) event comes
-      // in for a message that's already on screen.
       function updateMessageTicks(el, status) {
         if (!el) return;
         el.dataset.status = status;
@@ -3441,10 +3375,6 @@
         }
       }
 
-      // Called for every incoming "new-message" push. If this is the echo
-      // of a message WE just sent optimistically (matched by clientId),
-      // upgrade the existing pending bubble in place instead of appending a
-      // duplicate. Otherwise render it normally.
       function resolvePendingOrAppend(m) {
         if (m.sender === currentUser && m.clientId) {
           const pendingEl = document.getElementById("msg-" + m.clientId);
@@ -3459,14 +3389,7 @@
         appendMessage(m);
       }
 
-      // Builds the DOM node for a single message bubble WITHOUT inserting
-      // it anywhere — used by both appendMessage() (new/incoming messages,
-      // added at the bottom) and prependMessages() (older history loaded
-      // while scrolling up, added at the top).
       function createMessageElement(msg) {
-        // System messages (currently: missed-call notices) are informational
-        // only — they render in a distinct centered style and can never be
-        // edited or deleted (enforced both here and on the server).
         const isSystem = !!(msg.isSystem || msg.isMissedCall);
         const div = document.createElement("div");
         const isOut = msg.sender === currentUser;
@@ -3477,10 +3400,6 @@
 
         let content = "";
         if (msg.replyTo && !isSystem) {
-          // Show who was replied to and a short snippet of the original
-          // message text, using the preview snapshot the server attaches
-          // at send time. Clicking it jumps to (and briefly highlights)
-          // the original message if it's still loaded in this view.
           const preview = msg.replyToPreview;
           const replySenderLabel = preview
             ? preview.sender === currentUser
@@ -3539,9 +3458,6 @@
         content += `</div>`;
 
         div.innerHTML = content;
-
-        // Clicking a reply-quote jumps to and briefly highlights the
-        // original message, if it's currently rendered in this chat view.
         const replyQuoteEl = div.querySelector(".reply-quote");
         if (replyQuoteEl) {
           replyQuoteEl.addEventListener("click", (e) => {
@@ -3562,8 +3478,6 @@
 
         div.addEventListener("contextmenu", (e) => {
           e.preventDefault();
-          // System messages have no context menu at all — nothing on them
-          // can be replied to, edited, forwarded, or deleted.
           if (isSystem) return;
 
           selectedMessageForContext = msg;
@@ -3572,9 +3486,6 @@
           document.getElementById("ctxEdit").style.display = canEdit
             ? "block"
             : "none";
-          // "Delete for everyone" only ever applies to your own messages —
-          // other people's messages can only be hidden locally ("delete for
-          // me"), never removed from everyone's view.
           document.getElementById("ctxDeleteEveryone").style.display = isOut
             ? "block"
             : "none";
@@ -3592,10 +3503,6 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
 
-      // Shows a small spinner pinned to the top of the message list while
-      // an older page of history is being fetched (see the scroll listener
-      // below), so the user knows scrolling up is actually doing something
-      // instead of just hitting a silent dead zone.
       function showLoadMoreIndicator() {
         if (document.getElementById("messagesLoadMoreIndicator")) return;
         const el = document.createElement("div");
@@ -3610,10 +3517,6 @@
         const el = document.getElementById("messagesLoadMoreIndicator");
         if (el) el.remove();
       }
-
-      // Inserts an older page of messages (loaded via "fetch-more-history")
-      // at the TOP of the currently-open chat, preserving the user's
-      // current scroll position so the view doesn't visually jump.
       function prependMessages(history) {
         const prevScrollHeight = messagesContainer.scrollHeight;
         const prevScrollTop = messagesContainer.scrollTop;
@@ -3628,11 +3531,6 @@
           prevScrollTop + (messagesContainer.scrollHeight - prevScrollHeight);
       }
 
-      // Only ~10 messages are loaded per chat by default (see
-      // MESSAGES_PAGE_SIZE server-side) to keep the server/wire light.
-      // Scrolling near the top of the message list requests the next older
-      // page (showing a small spinner while it loads) and prepends it in
-      // place once it arrives.
       messagesContainer.addEventListener("scroll", () => {
         if (
           messagesContainer.scrollTop < 60 &&
