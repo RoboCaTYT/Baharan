@@ -109,7 +109,7 @@ async function sendGroupDeleteCodeEmail(toEmail, username, chatName, code) {
       from: process.env.MAIL_FROM || process.env.SMTP_USER,
       to: toEmail,
       subject: "کد تایید حذف گروه در بهاران",
-      text: `سلام ${username}،\n\nکد تایید حذف گروه/کانال «${chatName}»: ${code}\n\nاین کد تا ۱۰ دقیقه دیگر معتبر است. اگر این درخواست را شما نداده‌اید، این ایمیل را نادیده بگیرید و گروه شما حذف نخواهد شد.\n\nبهاران`,
+      text: `سلام ${username}،\n\nکد تایید حذف گروه/سرور «${chatName}»: ${code}\n\nاین کد تا ۱۰ دقیقه دیگر معتبر است. اگر این درخواست را شما نداده‌اید، این ایمیل را نادیده بگیرید و گروه شما حذف نخواهد شد.\n\nبهاران`,
     });
     return true;
   } catch (err) {
@@ -172,6 +172,12 @@ function findMessageById(id) {
     found = db.chats[chatId].messages.find((m) => m.id === id);
     if (found) return found;
   }
+  for (const serverId in db.servers) {
+    for (const ch of db.servers[serverId].channels) {
+      found = ch.messages.find((m) => m.id === id);
+      if (found) return found;
+    }
+  }
   return null;
 }
 
@@ -219,6 +225,102 @@ function getUserChats(username) {
       };
     });
 }
+
+/* ---------------- Discord-like server (guild) helpers ---------------- */
+
+const ALL_PERMISSIONS = [
+  "ADMINISTRATOR",
+  "MANAGE_SERVER",
+  "MANAGE_CHANNELS",
+  "MANAGE_ROLES",
+  "KICK_MEMBERS",
+  "MANAGE_MESSAGES",
+  "SEND_MESSAGES",
+  "VIEW_CHANNELS",
+];
+
+function makeEveryoneRole() {
+  return {
+    id: "everyone",
+    name: "@everyone",
+    color: null,
+    permissions: ["SEND_MESSAGES", "VIEW_CHANNELS"],
+    position: 0,
+    isEveryone: true,
+  };
+}
+
+function getServerMemberRoles(server, username) {
+  if (!server.memberRoles) server.memberRoles = {};
+  const ids = server.memberRoles[username] || [];
+  const roles = [server.roles.find((r) => r.id === "everyone")].filter(Boolean);
+  ids.forEach((rid) => {
+    const r = server.roles.find((x) => x.id === rid);
+    if (r) roles.push(r);
+  });
+  return roles;
+}
+
+function getMemberPermissions(server, username) {
+  if (server.owner === username) return new Set(ALL_PERMISSIONS);
+  const roles = getServerMemberRoles(server, username);
+  const perms = new Set();
+  roles.forEach((r) => (r.permissions || []).forEach((p) => perms.add(p)));
+  if (perms.has("ADMINISTRATOR")) return new Set(ALL_PERMISSIONS);
+  return perms;
+}
+
+function memberHasPermission(server, username, permission) {
+  if (!server || !server.members.includes(username)) return false;
+  const perms = getMemberPermissions(server, username);
+  return perms.has(permission);
+}
+
+function highestRoleColor(server, username) {
+  if (server.owner === username) return "#e0b23c";
+  const roles = getServerMemberRoles(server, username)
+    .filter((r) => !r.isEveryone && r.color)
+    .sort((a, b) => b.position - a.position);
+  return roles.length ? roles[0].color : null;
+}
+
+function buildServerMembersPayload(server) {
+  return server.members.map((m) => ({
+    username: m,
+    isOwner: server.owner === m,
+    roleIds: (server.memberRoles && server.memberRoles[m]) || [],
+    color: highestRoleColor(server, m),
+  }));
+}
+
+function buildServerSnapshot(server, username) {
+  const perms = Array.from(getMemberPermissions(server, username));
+  return {
+    id: server.id,
+    name: server.name,
+    icon: server.icon || null,
+    owner: server.owner,
+    roles: server.roles,
+    categories: server.categories.sort((a, b) => a.position - b.position),
+    channels: server.channels
+      .sort((a, b) => a.position - b.position)
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        categoryId: c.categoryId,
+        position: c.position,
+      })),
+    members: buildServerMembersPayload(server),
+    myPermissions: perms,
+  };
+}
+
+function findChannel(server, channelId) {
+  return server.channels.find((c) => c.id === channelId);
+}
+
+/* ---------------------------------------------------------------------- */
 
 async function sendCallPush(token, fromUsername, callType, targetUsername) {
   if (!firebaseEnabled) return;
@@ -283,7 +385,7 @@ function upgradeIncomingMessagesToDelivered(username) {
 
 function loadDb() {
   if (!fs.existsSync(DB_FILE)) {
-    const initialData = { users: {}, messages: [], chats: {} };
+    const initialData = { users: {}, messages: [], chats: {}, servers: {} };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2));
     return initialData;
   }
@@ -291,10 +393,11 @@ function loadDb() {
     const data = fs.readFileSync(DB_FILE, "utf8");
     const parsed = JSON.parse(data);
     if (!parsed.chats) parsed.chats = {};
+    if (!parsed.servers) parsed.servers = {};
     return parsed;
   } catch (err) {
     console.error("Error reading database file, resetting:", err);
-    return { users: {}, messages: [], chats: {} };
+    return { users: {}, messages: [], chats: {}, servers: {} };
   }
 }
 
@@ -445,6 +548,15 @@ function buildChatMembersPayload(chat) {
   }));
 }
 
+function broadcastToServerMembers(server, payload) {
+  server.members.forEach((member) => {
+    const clientWs = getWsByUsername(member);
+    if (clientWs && clientWs.readyState === WebSocket.OPEN) {
+      clientWs.send(JSON.stringify(payload));
+    }
+  });
+}
+
 function heartbeat() {
   this.isAlive = true;
 }
@@ -530,6 +642,7 @@ wss.on("connection", (ws) => {
             profilePic: null,
             contacts: [],
             chats: getUserChats(currentUsername),
+            servers: getUserServers(currentUsername),
             theme: "dark",
           }),
         );
@@ -569,6 +682,7 @@ wss.on("connection", (ws) => {
             profilePic: user.profilePic,
             contacts: enrichContacts(currentUsername, user.contacts),
             chats: getUserChats(currentUsername),
+            servers: getUserServers(currentUsername),
             theme: user.theme || "dark",
           }),
         );
@@ -592,6 +706,7 @@ wss.on("connection", (ws) => {
               profilePic: user.profilePic,
               contacts: enrichContacts(currentUsername, user.contacts),
               chats: getUserChats(currentUsername),
+              servers: getUserServers(currentUsername),
               theme: user.theme || "dark",
             }),
           );
@@ -782,20 +897,37 @@ wss.on("connection", (ws) => {
         break;
       }
 
-      case "create-group": {
+      /* ------------------- Discord-like server events ------------------- */
+
+      case "create-server": {
         if (!currentUsername) return;
-        const chatId = "group_" + Date.now();
+        const serverId = "srv_" + Date.now();
         const members = Array.from(
           new Set([...(msg.members || []), currentUsername]),
         );
-        db.chats[chatId] = {
-          id: chatId,
-          name: msg.groupName || "گروه جدید",
-          type: "group",
-          members,
-          owner: currentUsername,
-          admins: [],
+        const generalCategory = {
+          id: "cat_" + Date.now(),
+          name: "دسته‌بندی عمومی",
+          position: 0,
+        };
+        const generalChannel = {
+          id: "chn_" + (Date.now() + 1),
+          name: "عمومی",
+          type: "text",
+          categoryId: generalCategory.id,
+          position: 0,
           messages: [],
+        };
+        db.servers[serverId] = {
+          id: serverId,
+          name: msg.serverName || msg.groupName || "سرور جدید",
+          icon: null,
+          owner: currentUsername,
+          members,
+          memberRoles: {},
+          roles: [makeEveryoneRole()],
+          categories: [generalCategory],
+          channels: [generalChannel],
         };
         saveDb(db);
 
@@ -803,84 +935,314 @@ wss.on("connection", (ws) => {
           const clientWs = getWsByUsername(member);
           if (clientWs && clientWs.readyState === WebSocket.OPEN) {
             clientWs.send(
-              JSON.stringify({ type: "group-created", chat: db.chats[chatId] }),
+              JSON.stringify({
+                type: "server-created",
+                server: {
+                  id: serverId,
+                  name: db.servers[serverId].name,
+                  icon: null,
+                },
+              }),
             );
           }
         });
         break;
       }
 
-      case "create-announcement": {
+      case "fetch-server": {
         if (!currentUsername) return;
-        const chatId = "announcement_" + Date.now();
-        const members = Array.from(
-          new Set([...(msg.members || []), currentUsername]),
-        );
-        db.chats[chatId] = {
-          id: chatId,
-          name: msg.channelName || "کانال اطلاع‌رسانی",
-          type: "announcement",
-          members,
-          owner: currentUsername,
-          admins: [],
-          messages: [],
-        };
-        saveDb(db);
-
-        members.forEach((member) => {
-          const clientWs = getWsByUsername(member);
-          if (clientWs && clientWs.readyState === WebSocket.OPEN) {
-            clientWs.send(
-              JSON.stringify({ type: "group-created", chat: db.chats[chatId] }),
-            );
-          }
-        });
-        break;
-      }
-
-      case "fetch-chat-members": {
-        if (!currentUsername) return;
-        const chat = db.chats[msg.chatId];
-        if (!chat || !chat.members.includes(currentUsername)) return;
-        const requesterIsAdmin = chat.admins.includes(currentUsername);
-        const requesterIsOwner = chat.owner === currentUsername;
-        if (
-          chat.type === "announcement" &&
-          !requesterIsAdmin &&
-          !requesterIsOwner
-        ) {
-          ws.send(
-            JSON.stringify({
-              type: "error",
-              message: "دسترسی غیرمجاز: فقط ادمین‌ها و صاحب گروه",
-            }),
-          );
-          return;
-        }
+        const server = db.servers[msg.serverId];
+        if (!server || !server.members.includes(currentUsername)) return;
         ws.send(
           JSON.stringify({
-            type: "chat-members",
-            chatId: msg.chatId,
-            members: buildChatMembersPayload(chat),
-            isAdmin: requesterIsAdmin,
-            isOwner: requesterIsOwner,
+            type: "server-data",
+            server: buildServerSnapshot(server, currentUsername),
           }),
         );
         break;
       }
 
-      case "add-chat-member": {
+      case "create-category": {
         if (!currentUsername) return;
-        const chat = db.chats[msg.chatId];
-        if (!chat) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (!memberHasPermission(server, currentUsername, "MANAGE_CHANNELS")) {
+          ws.send(
+            JSON.stringify({ type: "error", message: "دسترسی غیرمجاز." }),
+          );
+          return;
+        }
+        const name = (msg.name || "دسته‌بندی جدید").trim();
+        const category = {
+          id: "cat_" + Date.now() + Math.random().toString(36).slice(2, 6),
+          name,
+          position: server.categories.length,
+        };
+        server.categories.push(category);
+        saveDb(db);
+        broadcastToServerMembers(server, {
+          type: "server-data",
+          server: buildServerSnapshot(server, currentUsername),
+        });
+        server.members.forEach((m) => {
+          if (m === currentUsername) return;
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
+
+      case "create-channel": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (!memberHasPermission(server, currentUsername, "MANAGE_CHANNELS")) {
+          ws.send(
+            JSON.stringify({ type: "error", message: "دسترسی غیرمجاز." }),
+          );
+          return;
+        }
+        const name = (msg.name || "کانال-جدید").trim();
+        const channel = {
+          id: "chn_" + Date.now() + Math.random().toString(36).slice(2, 6),
+          name,
+          type: msg.channelType === "voice" ? "voice" : "text",
+          categoryId: msg.categoryId || null,
+          position: server.channels.length,
+          messages: [],
+        };
+        server.channels.push(channel);
+        saveDb(db);
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
+
+      case "delete-channel": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (!memberHasPermission(server, currentUsername, "MANAGE_CHANNELS")) {
+          ws.send(
+            JSON.stringify({ type: "error", message: "دسترسی غیرمجاز." }),
+          );
+          return;
+        }
+        server.channels = server.channels.filter((c) => c.id !== msg.channelId);
+        saveDb(db);
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
+
+      case "delete-category": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (!memberHasPermission(server, currentUsername, "MANAGE_CHANNELS")) {
+          ws.send(
+            JSON.stringify({ type: "error", message: "دسترسی غیرمجاز." }),
+          );
+          return;
+        }
+        server.categories = server.categories.filter(
+          (c) => c.id !== msg.categoryId,
+        );
+        server.channels.forEach((c) => {
+          if (c.categoryId === msg.categoryId) c.categoryId = null;
+        });
+        saveDb(db);
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
+
+      case "create-role": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (!memberHasPermission(server, currentUsername, "MANAGE_ROLES")) {
+          ws.send(
+            JSON.stringify({ type: "error", message: "دسترسی غیرمجاز." }),
+          );
+          return;
+        }
+        const role = {
+          id: "role_" + Date.now() + Math.random().toString(36).slice(2, 6),
+          name: (msg.name || "نقش جدید").trim(),
+          color: msg.color || "#7289da",
+          permissions: Array.isArray(msg.permissions)
+            ? msg.permissions.filter((p) => ALL_PERMISSIONS.includes(p))
+            : [],
+          position: server.roles.length,
+        };
+        server.roles.push(role);
+        saveDb(db);
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
+
+      case "edit-role": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (!memberHasPermission(server, currentUsername, "MANAGE_ROLES")) {
+          ws.send(
+            JSON.stringify({ type: "error", message: "دسترسی غیرمجاز." }),
+          );
+          return;
+        }
+        const role = server.roles.find((r) => r.id === msg.roleId);
+        if (!role || (role.isEveryone === true && msg.name)) {
+          // allow permission edits on everyone role but not renaming/coloring
+        }
+        if (!role) return;
+        if (!role.isEveryone) {
+          if (msg.name) role.name = msg.name.trim();
+          if (msg.color) role.color = msg.color;
+        }
+        if (Array.isArray(msg.permissions)) {
+          role.permissions = msg.permissions.filter((p) =>
+            ALL_PERMISSIONS.includes(p),
+          );
+        }
+        saveDb(db);
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
+
+      case "delete-role": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (!memberHasPermission(server, currentUsername, "MANAGE_ROLES")) {
+          ws.send(
+            JSON.stringify({ type: "error", message: "دسترسی غیرمجاز." }),
+          );
+          return;
+        }
+        if (msg.roleId === "everyone") return;
+        server.roles = server.roles.filter((r) => r.id !== msg.roleId);
+        Object.keys(server.memberRoles || {}).forEach((m) => {
+          server.memberRoles[m] = server.memberRoles[m].filter(
+            (rid) => rid !== msg.roleId,
+          );
+        });
+        saveDb(db);
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
+
+      case "assign-role":
+      case "unassign-role": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (!memberHasPermission(server, currentUsername, "MANAGE_ROLES")) {
+          ws.send(
+            JSON.stringify({ type: "error", message: "دسترسی غیرمجاز." }),
+          );
+          return;
+        }
+        if (!server.members.includes(msg.member)) return;
+        if (!server.memberRoles) server.memberRoles = {};
+        if (!server.memberRoles[msg.member])
+          server.memberRoles[msg.member] = [];
+        const set = new Set(server.memberRoles[msg.member]);
+        if (msg.type === "assign-role") set.add(msg.roleId);
+        else set.delete(msg.roleId);
+        server.memberRoles[msg.member] = Array.from(set);
+        saveDb(db);
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
+
+      case "add-server-member": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
         const canManage =
-          chat.owner === currentUsername ||
-          chat.admins.includes(currentUsername);
+          server.owner === currentUsername ||
+          memberHasPermission(server, currentUsername, "MANAGE_SERVER");
         if (!canManage) {
           ws.send(
             JSON.stringify({
               type: "error",
-              message: "فقط صاحب گروه یا ادمین‌ها می‌توانند عضو اضافه کنند.",
+              message: "فقط صاحب سرور یا مدیران می‌توانند عضو اضافه کنند.",
             }),
           );
           return;
@@ -895,7 +1257,7 @@ wss.on("connection", (ws) => {
           );
           return;
         }
-        if (chat.members.includes(newMember)) {
+        if (server.members.includes(newMember)) {
           ws.send(
             JSON.stringify({
               type: "error",
@@ -904,102 +1266,250 @@ wss.on("connection", (ws) => {
           );
           return;
         }
-
-        chat.members.push(newMember);
+        server.members.push(newMember);
         saveDb(db);
 
         const newMemberWs = getWsByUsername(newMember);
         if (newMemberWs && newMemberWs.readyState === WebSocket.OPEN) {
-          newMemberWs.send(JSON.stringify({ type: "group-created", chat }));
+          newMemberWs.send(
+            JSON.stringify({
+              type: "server-created",
+              server: { id: server.id, name: server.name, icon: server.icon },
+            }),
+          );
         }
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
 
+      case "kick-server-member": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (!memberHasPermission(server, currentUsername, "KICK_MEMBERS")) {
+          ws.send(
+            JSON.stringify({ type: "error", message: "دسترسی غیرمجاز." }),
+          );
+          return;
+        }
+        if (msg.member === server.owner) return;
+        server.members = server.members.filter((m) => m !== msg.member);
+        if (server.memberRoles) delete server.memberRoles[msg.member];
+        saveDb(db);
+
+        const kickedWs = getWsByUsername(msg.member);
+        if (kickedWs && kickedWs.readyState === WebSocket.OPEN) {
+          kickedWs.send(
+            JSON.stringify({ type: "server-kicked", serverId: server.id }),
+          );
+        }
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
+        break;
+      }
+
+      case "fetch-channel-history": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server || !server.members.includes(currentUsername)) return;
+        const channel = findChannel(server, msg.channelId);
+        if (!channel) return;
+        const { page, hasMore } = paginateMessages(channel.messages, null);
         ws.send(
           JSON.stringify({
-            type: "chat-members",
-            chatId: msg.chatId,
-            members: buildChatMembersPayload(chat),
-            isAdmin: chat.admins.includes(currentUsername),
-            isOwner: chat.owner === currentUsername,
+            type: "channel-history",
+            serverId: server.id,
+            channelId: channel.id,
+            history: page,
+            hasMore,
           }),
         );
         break;
       }
 
-      case "make-chat-admin": {
+      case "fetch-more-channel-history": {
         if (!currentUsername) return;
-        const chat = db.chats[msg.chatId];
-        if (!chat) return;
-        if (chat.owner !== currentUsername) {
+        const server = db.servers[msg.serverId];
+        if (!server || !server.members.includes(currentUsername)) return;
+        const channel = findChannel(server, msg.channelId);
+        if (!channel) return;
+        const { page, hasMore } = paginateMessages(
+          channel.messages,
+          msg.beforeMessageId,
+        );
+        ws.send(
+          JSON.stringify({
+            type: "more-channel-history",
+            serverId: server.id,
+            channelId: channel.id,
+            history: page,
+            hasMore,
+          }),
+        );
+        break;
+      }
+
+      case "send-channel-message": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server || !server.members.includes(currentUsername)) return;
+        if (!memberHasPermission(server, currentUsername, "SEND_MESSAGES")) {
           ws.send(
             JSON.stringify({
               type: "error",
-              message: "فقط صاحب گروه می‌تواند ادمین تعیین کند.",
+              message: "شما اجازه ارسال پیام در این سرور را ندارید.",
             }),
           );
           return;
         }
-        const targetMember = msg.member;
-        if (!targetMember || !chat.members.includes(targetMember)) return;
-        if (targetMember === chat.owner) return; 
-        if (!chat.admins.includes(targetMember)) {
-          chat.admins.push(targetMember);
-          saveDb(db);
+        const channel = findChannel(server, msg.channelId);
+        if (!channel || channel.type !== "text") return;
+
+        let storedFileUrl = null;
+        if (msg.fileData) {
+          try {
+            storedFileUrl = saveBase64File(msg.fileData, msg.fileName);
+          } catch (err) {
+            console.error("Failed to save uploaded file:", err);
+          }
         }
 
-        ws.send(
-          JSON.stringify({
-            type: "chat-members",
-            chatId: msg.chatId,
-            members: buildChatMembersPayload(chat),
-            isAdmin: chat.admins.includes(currentUsername),
-            isOwner: true,
-          }),
-        );
+        const messageObj = {
+          id: "msg_" + Date.now() + Math.random(),
+          clientId: msg.clientId || null,
+          sender: currentUsername,
+          channelId: channel.id,
+          text: msg.text || "",
+          fileData: storedFileUrl,
+          fileName: msg.fileName || null,
+          fileType: msg.fileType || null,
+          isVoice: msg.isVoice || false,
+          latitude: msg.latitude || null,
+          longitude: msg.longitude || null,
+          replyTo: msg.replyTo || null,
+          replyToPreview: buildReplyPreview(msg.replyTo),
+          timestamp: Date.now(),
+        };
+        channel.messages.push(messageObj);
+        saveDb(db);
+
+        broadcastToServerMembers(server, {
+          type: "new-channel-message",
+          serverId: server.id,
+          channelId: channel.id,
+          message: messageObj,
+        });
         break;
       }
 
-      case "remove-chat-admin": {
+      case "edit-channel-message": {
         if (!currentUsername) return;
-        const chat = db.chats[msg.chatId];
-        if (!chat) return;
-        if (chat.owner !== currentUsername) {
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        const channel = findChannel(server, msg.channelId);
+        if (!channel) return;
+        const message = channel.messages.find((m) => m.id === msg.messageId);
+        if (!message || message.sender !== currentUsername) return;
+        message.text = msg.newText;
+        message.edited = true;
+        saveDb(db);
+        broadcastToServerMembers(server, {
+          type: "channel-message-edited",
+          serverId: server.id,
+          channelId: channel.id,
+          messageId: message.id,
+          newText: message.text,
+        });
+        break;
+      }
+
+      case "delete-channel-message": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        const channel = findChannel(server, msg.channelId);
+        if (!channel) return;
+        const message = channel.messages.find((m) => m.id === msg.messageId);
+        if (!message) return;
+        const canDelete =
+          message.sender === currentUsername ||
+          memberHasPermission(server, currentUsername, "MANAGE_MESSAGES");
+        if (!canDelete) return;
+        message.text = "این پیام حذف شده است";
+        message.isDeletedForEveryone = true;
+        message.fileData = null;
+        message.fileName = null;
+        saveDb(db);
+        broadcastToServerMembers(server, {
+          type: "channel-message-deleted",
+          serverId: server.id,
+          channelId: channel.id,
+          messageId: message.id,
+        });
+        break;
+      }
+
+      case "leave-server": {
+        if (!currentUsername) return;
+        const server = db.servers[msg.serverId];
+        if (!server) return;
+        if (server.owner === currentUsername) {
           ws.send(
             JSON.stringify({
               type: "error",
-              message: "فقط صاحب گروه می‌تواند ادمین را عزل کند.",
+              message: "صاحب سرور نمی‌تواند سرور را ترک کند؛ آن را حذف کنید.",
             }),
           );
           return;
         }
-        const targetMember = msg.member;
-        if (!targetMember) return;
-        const idx = chat.admins.indexOf(targetMember);
-        if (idx !== -1) {
-          chat.admins.splice(idx, 1);
-          saveDb(db);
-        }
-
-        ws.send(
-          JSON.stringify({
-            type: "chat-members",
-            chatId: msg.chatId,
-            members: buildChatMembersPayload(chat),
-            isAdmin: chat.admins.includes(currentUsername),
-            isOwner: true,
-          }),
-        );
+        server.members = server.members.filter((m) => m !== currentUsername);
+        if (server.memberRoles) delete server.memberRoles[currentUsername];
+        saveDb(db);
+        ws.send(JSON.stringify({ type: "server-kicked", serverId: server.id }));
+        server.members.forEach((m) => {
+          const cws = getWsByUsername(m);
+          if (cws && cws.readyState === WebSocket.OPEN) {
+            cws.send(
+              JSON.stringify({
+                type: "server-data",
+                server: buildServerSnapshot(server, m),
+              }),
+            );
+          }
+        });
         break;
       }
+
+      /* ---------------------------------------------------------------- */
 
       case "request-delete-group": {
         if (!currentUsername) return;
-        const chat = db.chats[msg.chatId];
-        if (!chat) return;
-        if (chat.owner !== currentUsername) {
+        const server = db.servers[msg.chatId];
+        if (!server) return;
+        if (server.owner !== currentUsername) {
           ws.send(
             JSON.stringify({
               type: "error",
-              message: "فقط صاحب گروه می‌تواند آن را حذف کند.",
+              message: "فقط صاحب سرور می‌تواند آن را حذف کند.",
             }),
           );
           return;
@@ -1011,7 +1521,7 @@ wss.on("connection", (ws) => {
               type: "group-delete-error",
               chatId: msg.chatId,
               message:
-                "برای حذف گروه ابتدا باید یک ایمیل معتبر برای حساب خود ثبت کنید.",
+                "برای حذف سرور ابتدا باید یک ایمیل معتبر برای حساب خود ثبت کنید.",
             }),
           );
           return;
@@ -1043,7 +1553,7 @@ wss.on("connection", (ws) => {
         sendGroupDeleteCodeEmail(
           ownerUser.email,
           currentUsername,
-          chat.name,
+          server.name,
           code,
         );
 
@@ -1051,7 +1561,7 @@ wss.on("connection", (ws) => {
           JSON.stringify({
             type: "group-delete-code-sent",
             chatId: msg.chatId,
-            message: "کد تایید حذف گروه به ایمیل شما ارسال شد.",
+            message: "کد تایید حذف سرور به ایمیل شما ارسال شد.",
           }),
         );
         break;
@@ -1059,13 +1569,13 @@ wss.on("connection", (ws) => {
 
       case "confirm-delete-group": {
         if (!currentUsername) return;
-        const chat = db.chats[msg.chatId];
-        if (!chat) return;
-        if (chat.owner !== currentUsername) {
+        const server = db.servers[msg.chatId];
+        if (!server) return;
+        if (server.owner !== currentUsername) {
           ws.send(
             JSON.stringify({
               type: "error",
-              message: "فقط صاحب گروه می‌تواند آن را حذف کند.",
+              message: "فقط صاحب سرور می‌تواند آن را حذف کند.",
             }),
           );
           return;
@@ -1089,9 +1599,9 @@ wss.on("connection", (ws) => {
         }
 
         groupDeleteCodes.delete(msg.chatId);
-        const members = chat.members.slice();
-        const chatName = chat.name;
-        delete db.chats[msg.chatId];
+        const members = server.members.slice();
+        const serverName = server.name;
+        delete db.servers[msg.chatId];
         saveDb(db);
 
         members.forEach((member) => {
@@ -1101,7 +1611,7 @@ wss.on("connection", (ws) => {
               JSON.stringify({
                 type: "group-deleted",
                 chatId: msg.chatId,
-                chatName,
+                chatName: serverName,
               }),
             );
           }
@@ -1671,6 +2181,12 @@ wss.on("connection", (ws) => {
     }
   });
 });
+
+function getUserServers(username) {
+  return Object.values(db.servers)
+    .filter((s) => s.members.includes(username))
+    .map((s) => ({ id: s.id, name: s.name, icon: s.icon || null }));
+}
 
 function leaveRoom(ws) {
   if (ws.room && rooms.has(ws.room)) {

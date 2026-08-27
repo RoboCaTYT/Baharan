@@ -767,6 +767,12 @@
           transform: translateX(100%);
           transition: transform 0.22s ease;
         }
+        #screen-main #serverView {
+          display: none;
+          z-index: 10;
+          transform: translateX(100%);
+          transition: transform 0.22s ease;
+        }
         #screen-main.mobile-chat-open .sidebar {
           transform: translateX(-100%);
           transition: transform 0.22s ease;
@@ -775,8 +781,15 @@
           display: flex !important;
           transform: translateX(0);
         }
+        #screen-main.mobile-chat-open #serverView {
+          display: flex !important;
+          transform: translateX(0);
+        }
         .mobile-back-btn {
           display: flex;
+        }
+        .server-channels-col {
+          width: 220px !important;
         }
       }
 
@@ -991,6 +1004,217 @@
         font-size: 12px;
         background: var(--tg-panel);
       }
+
+      /* ---------------- Discord-like server (guild) UI ---------------- */
+      .server-view-body {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+        height: 100%;
+      }
+      .server-channels-col {
+        width: 260px;
+        flex-shrink: 0;
+        background: var(--tg-sidebar);
+        border-left: 1px solid var(--tg-border);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .server-channels-header {
+        height: 65px;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--tg-border);
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .server-channels-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 8px;
+      }
+      .server-category-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 8px;
+        color: var(--tg-text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        cursor: default;
+        margin-top: 8px;
+      }
+      .server-category-row .cat-actions {
+        display: flex;
+        gap: 6px;
+      }
+      .server-category-row .cat-actions span {
+        cursor: pointer;
+        opacity: 0.7;
+      }
+      .server-category-row .cat-actions span:hover {
+        opacity: 1;
+        color: var(--tg-accent);
+      }
+      .server-channel-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        color: var(--tg-text-secondary);
+        font-size: 14px;
+        margin-bottom: 2px;
+      }
+      .server-channel-row:hover {
+        background: var(--tg-panel);
+      }
+      .server-channel-row.active {
+        background: var(--tg-panel);
+        color: var(--tg-text);
+      }
+      .server-channel-row .del-channel {
+        opacity: 0;
+        cursor: pointer;
+      }
+      .server-channel-row:hover .del-channel {
+        opacity: 0.7;
+      }
+      .server-channel-row .del-channel:hover {
+        opacity: 1;
+        color: var(--coral);
+      }
+      .server-main-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+      }
+      .server-gear-menu {
+        position: absolute;
+        top: 60px;
+        left: 12px;
+        background: var(--tg-sidebar);
+        border: 1px solid var(--tg-border);
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+        display: none;
+        flex-direction: column;
+        min-width: 200px;
+        z-index: 35;
+        overflow: hidden;
+      }
+      .server-gear-menu.show {
+        display: flex;
+      }
+      .server-gear-item {
+        padding: 11px 16px;
+        font-size: 14px;
+        cursor: pointer;
+        color: var(--tg-text);
+      }
+      .server-gear-item:hover {
+        background: var(--tg-panel);
+        color: var(--tg-accent);
+      }
+      .server-gear-item.danger {
+        color: var(--coral);
+      }
+      .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        background: var(--tg-panel);
+        margin-inline-end: 4px;
+      }
+      .role-color-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+      }
+      .role-list-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px;
+        background: var(--tg-bg);
+        border-radius: 8px;
+      }
+      .role-list-row .role-name-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+      }
+      .perm-checkbox-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 2px;
+        font-size: 13px;
+      }
+      .perm-checkbox-row input {
+        width: 18px;
+        height: 18px;
+      }
+      .color-swatch-input {
+        width: 40px;
+        height: 32px;
+        padding: 0;
+        border: none;
+        border-radius: 6px;
+        background: none;
+        cursor: pointer;
+      }
+      .member-role-select-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px;
+        background: var(--tg-bg);
+        border-radius: 8px;
+      }
+      .member-role-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .role-chip-toggle {
+        padding: 3px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        cursor: pointer;
+        border: 1px solid var(--tg-border);
+        background: var(--tg-panel);
+      }
+      .role-chip-toggle.active {
+        border-color: var(--tg-accent);
+        color: var(--tg-accent);
+      }
+      .modal-card.wide {
+        max-width: 460px;
+      }
+      .modal-scroll-list {
+        max-height: 280px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
     </style>
 
     <script
@@ -1069,12 +1293,12 @@
 
     <div id="groupModal" class="modal-overlay">
       <div class="modal-card">
-        <h3 id="groupModalTitle">ایجاد گروه جدید</h3>
+        <h3 id="groupModalTitle">ایجاد سرور جدید</h3>
         <input
           type="text"
           id="groupNameInput"
           class="auth-input"
-          placeholder="نام گروه یا کانال..."
+          placeholder="نام سرور..."
         />
         <input
           type="text"
@@ -1103,17 +1327,11 @@
     </div>
 
     <div id="membersModal" class="modal-overlay">
-      <div class="modal-card">
-        <h3 id="membersModalTitle">اعضای گروه</h3>
+      <div class="modal-card wide">
+        <h3 id="membersModalTitle">اعضا و نقش‌های سرور</h3>
         <div
           id="membersListContainer"
-          style="
-            max-height: 220px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-          "
+          class="modal-scroll-list"
         ></div>
         <div id="addMemberRow" style="display: none; gap: 8px; margin-top: 4px">
           <input
@@ -1136,7 +1354,7 @@
           id="deleteGroupBtn"
           style="display: none; background: var(--coral); margin-top: 4px"
         >
-          🗑️ حذف گروه
+          🗑️ حذف سرور
         </button>
         <button
           class="tg-btn"
@@ -1150,13 +1368,118 @@
       </div>
     </div>
 
+    <div id="rolesModal" class="modal-overlay">
+      <div class="modal-card wide">
+        <h3 style="margin: 0">نقش‌های سرور</h3>
+        <div id="rolesListContainer" class="modal-scroll-list"></div>
+        <button class="tg-btn" id="newRoleBtn" style="margin-top: 4px">
+          ➕ نقش جدید
+        </button>
+        <button
+          class="tg-btn"
+          style="background: var(--tg-panel); margin-top: 4px"
+          onclick="document.getElementById('rolesModal').classList.remove('show')"
+        >
+          بستن
+        </button>
+      </div>
+    </div>
+
+    <div id="roleEditModal" class="modal-overlay">
+      <div class="modal-card wide">
+        <h3 id="roleEditTitle" style="margin: 0">ویرایش نقش</h3>
+        <div style="display: flex; gap: 10px; align-items: center">
+          <input
+            type="text"
+            id="roleNameInput"
+            class="auth-input"
+            placeholder="نام نقش..."
+            style="flex: 1"
+          />
+          <input
+            type="color"
+            id="roleColorInput"
+            class="color-swatch-input"
+            value="#7289da"
+          />
+        </div>
+        <div id="rolePermsContainer"></div>
+        <div
+          style="
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            margin-top: 4px;
+          "
+        >
+          <button
+            class="tg-btn"
+            id="deleteRoleBtn"
+            style="background: var(--coral); display: none; width: auto"
+          >
+            حذف نقش
+          </button>
+          <div style="display: flex; gap: 8px">
+            <button
+              class="tg-btn"
+              style="background: var(--tg-panel)"
+              onclick="document.getElementById('roleEditModal').classList.remove('show')"
+            >
+              انصراف
+            </button>
+            <button class="tg-btn" id="saveRoleBtn">ذخیره</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="createChannelModal" class="modal-overlay">
+      <div class="modal-card">
+        <h3 style="margin: 0">ایجاد کانال جدید</h3>
+        <input
+          type="text"
+          id="newChannelNameInput"
+          class="auth-input"
+          placeholder="نام کانال..."
+        />
+        <div style="display: flex; gap: 14px; font-size: 14px">
+          <label style="display: flex; align-items: center; gap: 6px">
+            <input type="radio" name="newChannelType" value="text" checked />
+            💬 متنی
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px">
+            <input type="radio" name="newChannelType" value="voice" />
+            🔊 صوتی
+          </label>
+        </div>
+        <select id="newChannelCategorySelect" class="auth-input"></select>
+        <div
+          style="
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 4px;
+          "
+        >
+          <button
+            class="tg-btn"
+            style="background: var(--tg-panel)"
+            onclick="document.getElementById('createChannelModal').classList.remove('show')"
+          >
+            انصراف
+          </button>
+          <button class="tg-btn" id="submitCreateChannelBtn">ایجاد</button>
+        </div>
+      </div>
+    </div>
+
     <div id="deleteGroupModal" class="modal-overlay">
       <div class="modal-card">
         <h3
           id="deleteGroupTitle"
           style="margin: 0 0 4px 0; color: var(--coral)"
         >
-          حذف گروه
+          حذف سرور
         </h3>
 
         <div id="deleteGroupStepConfirm">
@@ -1168,7 +1491,7 @@
               line-height: 1.6;
             "
           >
-            چون شما صاحب این گروه هستید، برای حذف باید هویت خود را با کد
+            چون شما صاحب این سرور هستید، برای حذف باید هویت خود را با کد
             ارسال‌شده به ایمیل حسابتان تایید کنید. این عملیات غیرقابل بازگشت
             است.
           </p>
@@ -1183,7 +1506,7 @@
               line-height: 1.6;
             "
           >
-            کد ۶ رقمی ارسال شده به ایمیل خود را وارد کنید تا گروه برای همیشه حذف
+            کد ۶ رقمی ارسال شده به ایمیل خود را وارد کنید تا سرور برای همیشه حذف
             شود.
           </p>
           <input
@@ -1518,8 +1841,7 @@
           <div class="chat-tabs" id="chatTabs">
             <div class="chat-tab active" data-tab="all">همه</div>
             <div class="chat-tab" data-tab="direct">خصوصی</div>
-            <div class="chat-tab" data-tab="group">گروه‌ها</div>
-            <div class="chat-tab" data-tab="announcement">کانال‌ها</div>
+            <div class="chat-tab" data-tab="server">سرورها</div>
           </div>
           <div class="sidebar-search">
             <input
@@ -1534,7 +1856,7 @@
           <button
             class="fab-pencil"
             id="fabPencilBtn"
-            title="ایجاد گروه، کانال یا مخاطب جدید"
+            title="افزودن مخاطب یا سرور جدید"
           >
             <svg
               id="fabPencilIcon"
@@ -1555,8 +1877,7 @@
           </button>
           <div class="fab-menu" id="fabMenu">
             <div class="fab-menu-item" id="fabNewContact">👤 مخاطب جدید</div>
-            <div class="fab-menu-item" id="fabNewGroup">👥 گروه جدید</div>
-            <div class="fab-menu-item" id="fabNewChannel">📢 کانال جدید</div>
+            <div class="fab-menu-item" id="fabNewServer">🖥️ سرور جدید</div>
           </div>
         </div>
 
@@ -1571,7 +1892,7 @@
             padding: 20px;
           "
         >
-          <p>یک مخاطب یا گروه را از لیست سمت راست انتخاب کنید.</p>
+          <p>یک مخاطب یا سرور را از لیست سمت راست انتخاب کنید.</p>
         </div>
 
         <div class="chat-area" id="activeChatView" style="display: none">
@@ -1611,14 +1932,6 @@
               </span>
             </div>
             <div class="call-actions">
-              <button
-                class="call-btn-header"
-                id="viewMembersHeaderBtn"
-                style="display: none"
-                onclick="fetchChatMembers()"
-              >
-                👥 اعضا
-              </button>
               <button class="call-btn-header" id="startAudioCallBtn">🎤</button>
               <button class="call-btn-header video" id="startVideoCallBtn">
                 🎥
@@ -1692,6 +2005,93 @@
             </button>
           </div>
         </div>
+
+        <div class="chat-area" id="serverView" style="display: none">
+          <div class="server-view-body">
+            <div class="server-channels-col">
+              <div class="server-channels-header">
+                <button
+                  class="mobile-back-btn"
+                  id="serverMobileBackBtn"
+                  title="بازگشت"
+                  style="margin-left: 0"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M9 18l6-6-6-6"></path>
+                  </svg>
+                </button>
+                <span
+                  id="serverNameHeader"
+                  style="
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                  "
+                  >سرور</span
+                >
+                <button
+                  class="icon-btn"
+                  id="serverGearBtn"
+                  style="font-size: 18px"
+                  title="مدیریت سرور"
+                >
+                  ⚙️
+                </button>
+              </div>
+              <div class="server-channels-scroll" id="serverChannelsScroll">
+              </div>
+            </div>
+            <div class="server-main-col">
+              <div class="chat-header">
+                <div class="chat-header-title">
+                  <span id="activeChannelName"># کانال</span>
+                </div>
+              </div>
+              <div
+                class="messages-container"
+                id="channelMessagesContainer"
+              ></div>
+              <div class="chat-input-bar">
+                <input
+                  type="text"
+                  id="channelMessageInput"
+                  class="chat-input"
+                  placeholder="پیامی در این کانال بنویسید..."
+                />
+                <button
+                  class="icon-btn"
+                  id="sendChannelMessageBtn"
+                  title="ارسال"
+                  style="color: var(--tg-accent)"
+                >
+                  ➤
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="server-gear-menu" id="serverGearMenu">
+            <div class="server-gear-item" id="gearNewCategory">
+              📁 دسته‌بندی جدید
+            </div>
+            <div class="server-gear-item" id="gearNewChannel">
+              ➕ کانال جدید
+            </div>
+            <div class="server-gear-item" id="gearRoles">🎭 نقش‌ها</div>
+            <div class="server-gear-item" id="gearMembers">
+              👥 اعضا و نقش‌ها
+            </div>
+            <div class="server-gear-item danger" id="gearLeaveOrDelete">
+              🚪 ترک سرور
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="screen-call">
@@ -1725,7 +2125,6 @@
       let activeChatTab = "all";
       let typingHideTimer = null;
       let myTypingSendTimer = null;
-      let activeGroupType = null;
       let replyingToMessage = null;
       let selectedMessageForContext = null;
       let editingMessageId = null;
@@ -1734,6 +2133,16 @@
       let activeChatHasMore = false;
       let activeChatOldestMessageId = null;
       let loadingMoreMessages = false;
+
+      /* ---- Discord-like server (guild) state ---- */
+      let serversCache = {}; // serverId -> latest server-data snapshot
+      let activeServerId = null;
+      let activeChannelId = null;
+      let channelHasMore = false;
+      let channelOldestMessageId = null;
+      let loadingMoreChannelMessages = false;
+      let pendingChannelClientMessages = {};
+      let roleEditContext = { serverId: null, roleId: null };
 
       function genClientId() {
         return "c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
@@ -2119,9 +2528,9 @@
       document
         .getElementById("deleteGroupBtn")
         .addEventListener("click", () => {
-          if (!activeTargetContact) return;
+          if (!activeServerId) return;
           document.getElementById("membersModal").classList.remove("show");
-          openDeleteGroupModal(activeTargetContact);
+          openDeleteGroupModal(activeServerId);
         });
 
       function formatRelativeTime(ts) {
@@ -2163,10 +2572,11 @@
         return `آخرین بازدید ${formatLastSeenDateTime(lastSeen)}`;
       }
 
-      function openGroupModal(type) {
-        activeGroupType = type;
+      function openCreateServerModal() {
         document.getElementById("groupModalTitle").textContent =
-          type === "group" ? "ایجاد گروه جدید" : "ایجاد کانال اطلاع‌رسانی";
+          "ایجاد سرور جدید";
+        document.getElementById("groupNameInput").value = "";
+        document.getElementById("groupMembersInput").value = "";
         document.getElementById("groupModal").classList.add("show");
       }
       function closeGroupModal() {
@@ -2203,13 +2613,9 @@
           }),
         );
       });
-      document.getElementById("fabNewGroup").addEventListener("click", () => {
+      document.getElementById("fabNewServer").addEventListener("click", () => {
         closeFabMenu();
-        openGroupModal("group");
-      });
-      document.getElementById("fabNewChannel").addEventListener("click", () => {
-        closeFabMenu();
-        openGroupModal("announcement");
+        openCreateServerModal();
       });
 
       document
@@ -2229,46 +2635,634 @@
 
           ws.send(
             JSON.stringify({
-              type:
-                activeGroupType === "group"
-                  ? "create-group"
-                  : "create-announcement",
-              groupName: name,
-              channelName: name,
+              type: "create-server",
+              serverName: name,
               members,
             }),
           );
           closeGroupModal();
         });
 
-      function fetchChatMembers() {
+      /* ================= Discord-like server (guild) logic ================= */
+
+      const PERMISSION_LABELS = {
+        ADMINISTRATOR: "مدیر کل (همه دسترسی‌ها)",
+        MANAGE_SERVER: "مدیریت سرور",
+        MANAGE_CHANNELS: "مدیریت کانال‌ها و دسته‌بندی‌ها",
+        MANAGE_ROLES: "مدیریت نقش‌ها",
+        KICK_MEMBERS: "اخراج اعضا",
+        MANAGE_MESSAGES: "مدیریت پیام‌های دیگران",
+        SEND_MESSAGES: "ارسال پیام",
+        VIEW_CHANNELS: "مشاهده کانال‌ها",
+      };
+      const PERMISSION_ORDER = Object.keys(PERMISSION_LABELS);
+
+      function getActiveServer() {
+        return activeServerId ? serversCache[activeServerId] : null;
+      }
+      function myPerms() {
+        const s = getActiveServer();
+        return s ? s.myPermissions || [] : [];
+      }
+      function iHavePerm(p) {
+        return myPerms().includes(p) || myPerms().includes("ADMINISTRATOR");
+      }
+      function iAmOwner() {
+        const s = getActiveServer();
+        return s && s.owner === currentUser;
+      }
+
+      function openServer(serverId) {
+        activeServerId = serverId;
+        activeChannelId = null;
+        chatAreaPlaceholder.style.display = "none";
+        activeChatView.style.display = "none";
+        document.getElementById("serverView").style.display = "flex";
+        screenMainEl.classList.add("mobile-chat-open");
+        document.getElementById("serverNameHeader").textContent =
+          (findContact(serverId) && findContact(serverId).name) || "سرور";
+        document.getElementById("channelMessagesContainer").innerHTML = "";
+        document.getElementById("activeChannelName").textContent = "";
+        ws.send(JSON.stringify({ type: "fetch-server", serverId }));
+      }
+
+      document
+        .getElementById("serverMobileBackBtn")
+        .addEventListener("click", () =>
+          screenMainEl.classList.remove("mobile-chat-open"),
+        );
+
+      function renderServerChannels(server) {
+        document.getElementById("serverNameHeader").textContent = server.name;
+        const scroll = document.getElementById("serverChannelsScroll");
+        scroll.innerHTML = "";
+
+        const canManageChannels = iHavePerm("MANAGE_CHANNELS");
+        const cats = server.categories
+          .slice()
+          .sort((a, b) => a.position - b.position);
+        const uncategorized = server.channels.filter((c) => !c.categoryId);
+
+        function renderChannelRow(container, ch) {
+          const row = document.createElement("div");
+          row.className =
+            "server-channel-row" + (ch.id === activeChannelId ? " active" : "");
+          row.innerHTML = `<span>${ch.type === "voice" ? "🔊" : "#"} ${escapeHtml(ch.name)}</span>${
+            canManageChannels
+              ? '<span class="del-channel" title="حذف کانال">🗑️</span>'
+              : ""
+          }`;
+          row.addEventListener("click", (e) => {
+            if (e.target.classList.contains("del-channel")) return;
+            openChannel(ch.id);
+          });
+          const delBtn = row.querySelector(".del-channel");
+          if (delBtn) {
+            delBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              if (!confirm(`کانال «${ch.name}» حذف شود؟`)) return;
+              ws.send(
+                JSON.stringify({
+                  type: "delete-channel",
+                  serverId: server.id,
+                  channelId: ch.id,
+                }),
+              );
+            });
+          }
+          container.appendChild(row);
+        }
+
+        uncategorized
+          .sort((a, b) => a.position - b.position)
+          .forEach((ch) => renderChannelRow(scroll, ch));
+
+        cats.forEach((cat) => {
+          const catRow = document.createElement("div");
+          catRow.className = "server-category-row";
+          catRow.innerHTML = `<span>${escapeHtml(cat.name)}</span>`;
+          if (canManageChannels) {
+            const actions = document.createElement("span");
+            actions.className = "cat-actions";
+            actions.innerHTML = `<span title="حذف دسته‌بندی">🗑️</span>`;
+            actions.querySelector("span").addEventListener("click", () => {
+              if (!confirm(`دسته‌بندی «${cat.name}» حذف شود؟`)) return;
+              ws.send(
+                JSON.stringify({
+                  type: "delete-category",
+                  serverId: server.id,
+                  categoryId: cat.id,
+                }),
+              );
+            });
+            catRow.appendChild(actions);
+          }
+          scroll.appendChild(catRow);
+
+          server.channels
+            .filter((c) => c.categoryId === cat.id)
+            .sort((a, b) => a.position - b.position)
+            .forEach((ch) => renderChannelRow(scroll, ch));
+        });
+
         if (
-          !activeTargetContact ||
-          (!activeTargetContact.startsWith("group_") &&
-            !activeTargetContact.startsWith("announcement_"))
-        )
+          !activeChannelId &&
+          server.channels.length &&
+          document.getElementById("activeChannelName").textContent === ""
+        ) {
+          openChannel(server.channels[0].id);
+        } else if (activeChannelId) {
+          // keep highlighting in sync
+          renderServerChannels.__skip = true;
+        }
+      }
+
+      function openChannel(channelId) {
+        activeChannelId = channelId;
+        channelHasMore = false;
+        channelOldestMessageId = null;
+        loadingMoreChannelMessages = false;
+        const server = getActiveServer();
+        if (!server) return;
+        const channel = server.channels.find((c) => c.id === channelId);
+        document.getElementById("activeChannelName").textContent = channel
+          ? (channel.type === "voice" ? "🔊 " : "# ") + channel.name
+          : "";
+        renderServerChannels(server);
+
+        if (channel && channel.type === "voice") {
+          document.getElementById("channelMessagesContainer").innerHTML =
+            '<div style="text-align:center;color:var(--tg-text-secondary);padding:24px;">قابلیت گفتگوی صوتی گروهی به‌زودی اضافه می‌شود.</div>';
           return;
+        }
+
+        document.getElementById("channelMessagesContainer").innerHTML = "";
         ws.send(
           JSON.stringify({
-            type: "fetch-chat-members",
-            chatId: activeTargetContact,
+            type: "fetch-channel-history",
+            serverId: server.id,
+            channelId,
           }),
         );
+      }
+
+      function roleBadgesHtml(server, member) {
+        const info = server.members.find((m) => m.username === member);
+        if (!info) return "";
+        const roleIds = info.roleIds || [];
+        const roles = server.roles.filter(
+          (r) => roleIds.includes(r.id) && !r.isEveryone,
+        );
+        return roles
+          .map(
+            (r) =>
+              `<span class="role-badge"><span class="role-color-dot" style="background:${r.color || "#888"}"></span>${escapeHtml(r.name)}</span>`,
+          )
+          .join("");
+      }
+
+      function nameColorFor(server, username) {
+        const info = server.members.find((m) => m.username === username);
+        return info && info.color ? info.color : null;
+      }
+
+      /* ---- server gear menu ---- */
+      const serverGearBtn = document.getElementById("serverGearBtn");
+      const serverGearMenu = document.getElementById("serverGearMenu");
+      serverGearBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const server = getActiveServer();
+        if (!server) return;
+        document.getElementById("gearNewCategory").style.display = iHavePerm(
+          "MANAGE_CHANNELS",
+        )
+          ? "block"
+          : "none";
+        document.getElementById("gearNewChannel").style.display = iHavePerm(
+          "MANAGE_CHANNELS",
+        )
+          ? "block"
+          : "none";
+        document.getElementById("gearRoles").style.display = iHavePerm(
+          "MANAGE_ROLES",
+        )
+          ? "block"
+          : "none";
+        document.getElementById("gearLeaveOrDelete").textContent = iAmOwner()
+          ? "🗑️ حذف سرور"
+          : "🚪 ترک سرور";
+        serverGearMenu.classList.toggle("show");
+      });
+      window.addEventListener("click", () =>
+        serverGearMenu.classList.remove("show"),
+      );
+      serverGearMenu.addEventListener("click", (e) => e.stopPropagation());
+
+      document.getElementById("gearNewCategory").addEventListener("click", () => {
+        serverGearMenu.classList.remove("show");
+        const name = prompt("نام دسته‌بندی جدید:");
+        if (!name || !name.trim()) return;
+        ws.send(
+          JSON.stringify({
+            type: "create-category",
+            serverId: activeServerId,
+            name: name.trim(),
+          }),
+        );
+      });
+
+      document.getElementById("gearNewChannel").addEventListener("click", () => {
+        serverGearMenu.classList.remove("show");
+        openCreateChannelModal();
+      });
+
+      document.getElementById("gearRoles").addEventListener("click", () => {
+        serverGearMenu.classList.remove("show");
+        openRolesModal();
+      });
+
+      document.getElementById("gearMembers").addEventListener("click", () => {
+        serverGearMenu.classList.remove("show");
+        openServerMembersModal();
+      });
+
+      document
+        .getElementById("gearLeaveOrDelete")
+        .addEventListener("click", () => {
+          serverGearMenu.classList.remove("show");
+          if (iAmOwner()) {
+            document.getElementById("membersModal").classList.remove("show");
+            openDeleteGroupModal(activeServerId);
+          } else {
+            if (!confirm("آیا مطمئن هستید که می‌خواهید این سرور را ترک کنید؟"))
+              return;
+            ws.send(
+              JSON.stringify({ type: "leave-server", serverId: activeServerId }),
+            );
+          }
+        });
+
+      /* ---- create channel modal ---- */
+      function openCreateChannelModal() {
+        const server = getActiveServer();
+        if (!server) return;
+        document.getElementById("newChannelNameInput").value = "";
+        document.querySelector(
+          'input[name="newChannelType"][value="text"]',
+        ).checked = true;
+        const sel = document.getElementById("newChannelCategorySelect");
+        sel.innerHTML = '<option value="">بدون دسته‌بندی</option>';
+        server.categories.forEach((cat) => {
+          const opt = document.createElement("option");
+          opt.value = cat.id;
+          opt.textContent = cat.name;
+          sel.appendChild(opt);
+        });
+        document.getElementById("createChannelModal").classList.add("show");
+      }
+
+      document
+        .getElementById("submitCreateChannelBtn")
+        .addEventListener("click", () => {
+          const name = document
+            .getElementById("newChannelNameInput")
+            .value.trim();
+          if (!name) return alert("لطفاً نام کانال را وارد کنید");
+          const channelType = document.querySelector(
+            'input[name="newChannelType"]:checked',
+          ).value;
+          const categoryId =
+            document.getElementById("newChannelCategorySelect").value || null;
+          ws.send(
+            JSON.stringify({
+              type: "create-channel",
+              serverId: activeServerId,
+              name,
+              channelType,
+              categoryId,
+            }),
+          );
+          document.getElementById("createChannelModal").classList.remove("show");
+        });
+
+      /* ---- roles list modal ---- */
+      function openRolesModal() {
+        renderRolesList();
+        document.getElementById("rolesModal").classList.add("show");
+      }
+
+      function renderRolesList() {
+        const server = getActiveServer();
+        const container = document.getElementById("rolesListContainer");
+        container.innerHTML = "";
+        if (!server) return;
+        server.roles
+          .slice()
+          .sort((a, b) => b.position - a.position)
+          .forEach((role) => {
+            const row = document.createElement("div");
+            row.className = "role-list-row";
+            row.innerHTML = `
+            <div class="role-name-wrap">
+              <span class="role-color-dot" style="background:${role.color || "#888"}"></span>
+              <span>${escapeHtml(role.name)}</span>
+            </div>
+            <button class="tg-btn member-promote-btn" style="width:auto;">ویرایش</button>
+          `;
+            row
+              .querySelector("button")
+              .addEventListener("click", () => openRoleEditModal(role.id));
+            container.appendChild(row);
+          });
+      }
+
+      document.getElementById("newRoleBtn").addEventListener("click", () => {
+        openRoleEditModal(null);
+      });
+
+      function buildPermCheckboxes(selectedPerms, disableAll) {
+        const container = document.getElementById("rolePermsContainer");
+        container.innerHTML = "";
+        PERMISSION_ORDER.forEach((perm) => {
+          const row = document.createElement("div");
+          row.className = "perm-checkbox-row";
+          row.innerHTML = `
+            <span>${PERMISSION_LABELS[perm]}</span>
+            <input type="checkbox" data-perm="${perm}" ${
+              selectedPerms.includes(perm) ? "checked" : ""
+            } ${disableAll ? "disabled" : ""} />
+          `;
+          container.appendChild(row);
+        });
+      }
+
+      function openRoleEditModal(roleId) {
+        const server = getActiveServer();
+        if (!server) return;
+        roleEditContext = { serverId: server.id, roleId };
+        const role = roleId
+          ? server.roles.find((r) => r.id === roleId)
+          : { name: "", color: "#7289da", permissions: [], isEveryone: false };
+
+        document.getElementById("roleEditTitle").textContent = roleId
+          ? "ویرایش نقش"
+          : "نقش جدید";
+        document.getElementById("roleNameInput").value = role.name || "";
+        document.getElementById("roleNameInput").disabled = !!role.isEveryone;
+        document.getElementById("roleColorInput").value = role.color || "#7289da";
+        document.getElementById("roleColorInput").disabled = !!role.isEveryone;
+        buildPermCheckboxes(role.permissions || [], false);
+        document.getElementById("deleteRoleBtn").style.display =
+          roleId && !role.isEveryone ? "block" : "none";
+        document.getElementById("roleEditModal").classList.add("show");
+      }
+
+      document.getElementById("saveRoleBtn").addEventListener("click", () => {
+        const checkboxes = document.querySelectorAll(
+          "#rolePermsContainer input[type=checkbox]",
+        );
+        const permissions = Array.from(checkboxes)
+          .filter((c) => c.checked)
+          .map((c) => c.dataset.perm);
+        const name = document.getElementById("roleNameInput").value.trim();
+        const color = document.getElementById("roleColorInput").value;
+
+        if (roleEditContext.roleId) {
+          ws.send(
+            JSON.stringify({
+              type: "edit-role",
+              serverId: roleEditContext.serverId,
+              roleId: roleEditContext.roleId,
+              name,
+              color,
+              permissions,
+            }),
+          );
+        } else {
+          if (!name) return alert("لطفاً نام نقش را وارد کنید");
+          ws.send(
+            JSON.stringify({
+              type: "create-role",
+              serverId: roleEditContext.serverId,
+              name,
+              color,
+              permissions,
+            }),
+          );
+        }
+        document.getElementById("roleEditModal").classList.remove("show");
+      });
+
+      document.getElementById("deleteRoleBtn").addEventListener("click", () => {
+        if (!roleEditContext.roleId) return;
+        if (!confirm("این نقش حذف شود؟")) return;
+        ws.send(
+          JSON.stringify({
+            type: "delete-role",
+            serverId: roleEditContext.serverId,
+            roleId: roleEditContext.roleId,
+          }),
+        );
+        document.getElementById("roleEditModal").classList.remove("show");
+      });
+
+      /* ---- server members modal (repurposes old membersModal) ---- */
+      function openServerMembersModal() {
+        const server = getActiveServer();
+        if (!server) return;
+        document.getElementById("membersModalTitle").textContent =
+          "اعضا و نقش‌های سرور";
+        renderServerMembersList();
+        document.getElementById("addMemberRow").style.display =
+          iHavePerm("MANAGE_SERVER") || iAmOwner() ? "flex" : "none";
+        document.getElementById("deleteGroupBtn").style.display = iAmOwner()
+          ? "block"
+          : "none";
+        document.getElementById("membersModal").classList.add("show");
+      }
+
+      function renderServerMembersList() {
+        const server = getActiveServer();
+        const container = document.getElementById("membersListContainer");
+        container.innerHTML = "";
+        if (!server) return;
+        const assignableRoles = server.roles.filter((r) => !r.isEveryone);
+        const canManageRoles = iHavePerm("MANAGE_ROLES");
+        const canKick = iHavePerm("KICK_MEMBERS");
+
+        server.members.forEach((m) => {
+          const wrap = document.createElement("div");
+          wrap.className = "member-role-select-row";
+
+          const topRow = document.createElement("div");
+          topRow.style.cssText =
+            "display:flex;align-items:center;justify-content:space-between;gap:8px;";
+          const nameSpan = document.createElement("span");
+          nameSpan.innerHTML = `${escapeHtml(m.username)} ${
+            m.isOwner
+              ? '<span class="member-owner-tag">صاحب</span>'
+              : ""
+          }`;
+          topRow.appendChild(nameSpan);
+
+          if (canKick && !m.isOwner && m.username !== currentUser) {
+            const kickBtn = document.createElement("button");
+            kickBtn.className = "tg-btn member-demote-btn";
+            kickBtn.textContent = "اخراج";
+            kickBtn.addEventListener("click", () => {
+              if (!confirm(`${m.username} از سرور اخراج شود؟`)) return;
+              ws.send(
+                JSON.stringify({
+                  type: "kick-server-member",
+                  serverId: server.id,
+                  member: m.username,
+                }),
+              );
+            });
+            topRow.appendChild(kickBtn);
+          }
+          wrap.appendChild(topRow);
+
+          if (assignableRoles.length) {
+            const chips = document.createElement("div");
+            chips.className = "member-role-chips";
+            assignableRoles.forEach((role) => {
+              const chip = document.createElement("span");
+              const active = (m.roleIds || []).includes(role.id);
+              chip.className =
+                "role-chip-toggle" + (active ? " active" : "");
+              chip.textContent = role.name;
+              chip.style.borderColor = active ? role.color : "";
+              chip.style.color = active ? role.color : "";
+              if (canManageRoles && !m.isOwner) {
+                chip.addEventListener("click", () => {
+                  ws.send(
+                    JSON.stringify({
+                      type: active ? "unassign-role" : "assign-role",
+                      serverId: server.id,
+                      member: m.username,
+                      roleId: role.id,
+                    }),
+                  );
+                });
+              } else {
+                chip.style.opacity = "0.6";
+                chip.style.cursor = "default";
+              }
+              chips.appendChild(chip);
+            });
+            wrap.appendChild(chips);
+          }
+
+          container.appendChild(wrap);
+        });
       }
 
       document.getElementById("addMemberBtn").addEventListener("click", () => {
         const input = document.getElementById("addMemberInput");
         const newMember = input.value.trim();
-        if (!newMember || !activeTargetContact) return;
+        if (!newMember || !activeServerId) return;
         ws.send(
           JSON.stringify({
-            type: "add-chat-member",
-            chatId: activeTargetContact,
+            type: "add-server-member",
+            serverId: activeServerId,
             newMember,
           }),
         );
         input.value = "";
       });
+
+      /* ---- channel messaging ---- */
+      const channelMessageInput = document.getElementById(
+        "channelMessageInput",
+      );
+      const sendChannelMessageBtn = document.getElementById(
+        "sendChannelMessageBtn",
+      );
+      const channelMessagesContainer = document.getElementById(
+        "channelMessagesContainer",
+      );
+
+      function sendChannelTextMessage() {
+        const text = channelMessageInput.value.trim();
+        if (!text || !activeServerId || !activeChannelId) return;
+        const clientId = genClientId();
+        const localMsg = {
+          id: clientId,
+          clientId,
+          sender: currentUser,
+          channelId: activeChannelId,
+          text,
+          timestamp: Date.now(),
+          status: "pending",
+        };
+        pendingChannelClientMessages[clientId] = true;
+        appendChannelMessage(localMsg);
+        ws.send(
+          JSON.stringify({
+            type: "send-channel-message",
+            serverId: activeServerId,
+            channelId: activeChannelId,
+            clientId,
+            text,
+          }),
+        );
+        channelMessageInput.value = "";
+      }
+      sendChannelMessageBtn.addEventListener("click", sendChannelTextMessage);
+      channelMessageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendChannelTextMessage();
+      });
+
+      function createChannelMessageElement(msg) {
+        const server = getActiveServer();
+        const div = document.createElement("div");
+        const isOut = msg.sender === currentUser;
+        div.className = "message-bubble " + (isOut ? "out" : "in");
+        div.id = "chmsg-" + msg.id;
+
+        const color = server ? nameColorFor(server, msg.sender) : null;
+        let content = "";
+        if (!isOut) {
+          content += `<div style="font-weight:700;font-size:12px;margin-bottom:2px;${
+            color ? "color:" + color + ";" : "color:var(--tg-accent);"
+          }">${escapeHtml(msg.sender)}</div>`;
+        }
+        content += `<div class="msg-text-content">${escapeHtml(msg.text)}</div>`;
+
+        const timeText = msg.timestamp
+          ? new Date(msg.timestamp).toLocaleTimeString("fa-IR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "";
+        content += `<div class="msg-meta-row">`;
+        if (msg.edited) content += `<span class="msg-edited-label">ویرایش شده</span>`;
+        content += `<span>${timeText}</span></div>`;
+        div.innerHTML = content;
+        return div;
+      }
+
+      function appendChannelMessage(msg) {
+        channelMessagesContainer.appendChild(createChannelMessageElement(msg));
+        channelMessagesContainer.scrollTop =
+          channelMessagesContainer.scrollHeight;
+      }
+
+      function resolvePendingChannelOrAppend(m) {
+        if (m.sender === currentUser && m.clientId) {
+          const pendingEl = document.getElementById("chmsg-" + m.clientId);
+          if (pendingEl) {
+            pendingEl.id = "chmsg-" + m.id;
+            delete pendingChannelClientMessages[m.clientId];
+            return;
+          }
+          delete pendingChannelClientMessages[m.clientId];
+        }
+        appendChannelMessage(m);
+      }
+
+      /* ================= end server logic (more wired in ws.onmessage) ================= */
 
       let ws = null;
       let currentUser = null;
@@ -2539,7 +3533,10 @@
                 avatarInitials.style.display = "none";
                 localStorage.setItem("bahar_pic", msg.profilePic);
               }
-              setInitialContactsAndChats(msg.contacts || [], msg.chats || []);
+              setInitialContactsAndChats(
+                msg.contacts || [],
+                msg.servers || [],
+              );
               localStorage.setItem("bahar_user", currentUser);
               screenAuth.classList.remove("active");
               screenMain.classList.add("active");
@@ -2586,7 +3583,7 @@
               if (msg.chatId === pendingDeleteGroupChatId) {
                 deleteGroupStepConfirm.style.display = "none";
                 deleteGroupStepCode.style.display = "block";
-                deleteGroupSubmitBtn.textContent = "تایید و حذف گروه";
+                deleteGroupSubmitBtn.textContent = "تایید و حذف سرور";
                 showDeleteGroupSuccess(msg.message);
                 setTimeout(() => deleteGroupCodeInput.focus(), 50);
               }
@@ -2600,34 +3597,147 @@
 
             case "group-deleted": {
               if (msg.chatId === pendingDeleteGroupChatId) {
-                showDeleteGroupSuccess("گروه با موفقیت حذف شد.");
+                showDeleteGroupSuccess("سرور با موفقیت حذف شد.");
                 setTimeout(closeDeleteGroupModal, 1200);
               }
               contactsCache = contactsCache.filter(
                 (c) => c.username !== msg.chatId,
               );
+              delete serversCache[msg.chatId];
               sortAndRender();
-              if (activeTargetContact === msg.chatId) {
-                activeTargetContact = null;
-                activeChatView.style.display = "none";
+              if (activeServerId === msg.chatId) {
+                activeServerId = null;
+                activeChannelId = null;
+                document.getElementById("serverView").style.display = "none";
                 chatAreaPlaceholder.style.display = "flex";
                 screenMainEl.classList.remove("mobile-chat-open");
               }
               break;
             }
 
-            case "group-created":
-              addOrUpdateChatItem(msg.chat);
+            case "server-created":
+              addOrUpdateServerItem(msg.server);
               break;
+
+            case "server-data":
+              serversCache[msg.server.id] = msg.server;
+              addOrUpdateServerItem({
+                id: msg.server.id,
+                name: msg.server.name,
+                icon: msg.server.icon,
+              });
+              if (activeServerId === msg.server.id) {
+                renderServerChannels(msg.server);
+                if (
+                  document.getElementById("membersModal").classList.contains(
+                    "show",
+                  )
+                ) {
+                  renderServerMembersList();
+                }
+                if (
+                  document.getElementById("rolesModal").classList.contains(
+                    "show",
+                  )
+                ) {
+                  renderRolesList();
+                }
+              }
+              break;
+
+            case "server-kicked":
+              contactsCache = contactsCache.filter(
+                (c) => c.username !== msg.serverId,
+              );
+              delete serversCache[msg.serverId];
+              sortAndRender();
+              if (activeServerId === msg.serverId) {
+                activeServerId = null;
+                activeChannelId = null;
+                document.getElementById("serverView").style.display = "none";
+                chatAreaPlaceholder.style.display = "flex";
+                screenMainEl.classList.remove("mobile-chat-open");
+              }
+              break;
+
+            case "channel-history":
+              if (
+                msg.serverId === activeServerId &&
+                msg.channelId === activeChannelId
+              ) {
+                channelMessagesContainer.innerHTML = "";
+                msg.history.forEach((m) => appendChannelMessage(m));
+                channelHasMore = !!msg.hasMore;
+                channelOldestMessageId =
+                  msg.history && msg.history.length
+                    ? msg.history[0].id
+                    : null;
+              }
+              break;
+
+            case "more-channel-history":
+              if (
+                msg.serverId === activeServerId &&
+                msg.channelId === activeChannelId
+              ) {
+                loadingMoreChannelMessages = false;
+                channelHasMore = !!msg.hasMore;
+                if (msg.history && msg.history.length) {
+                  channelOldestMessageId = msg.history[0].id;
+                  const prevHeight = channelMessagesContainer.scrollHeight;
+                  const frag = document.createDocumentFragment();
+                  msg.history.forEach((m) =>
+                    frag.appendChild(createChannelMessageElement(m)),
+                  );
+                  channelMessagesContainer.insertBefore(
+                    frag,
+                    channelMessagesContainer.firstChild,
+                  );
+                  channelMessagesContainer.scrollTop =
+                    channelMessagesContainer.scrollHeight - prevHeight;
+                }
+              }
+              break;
+
+            case "new-channel-message": {
+              if (
+                msg.serverId === activeServerId &&
+                msg.channelId === activeChannelId
+              ) {
+                resolvePendingChannelOrAppend(msg.message);
+              } else {
+                const s = serversCache[msg.serverId];
+                const name = s ? s.name : msg.serverId;
+                if (msg.message.sender !== currentUser) {
+                  notifyNewMessage(msg.serverId, name, msg.message.text);
+                }
+              }
+              break;
+            }
+
+            case "channel-message-edited": {
+              const el = document.getElementById("chmsg-" + msg.messageId);
+              if (el) {
+                const textEl = el.querySelector(".msg-text-content");
+                if (textEl) textEl.textContent = msg.newText;
+              }
+              break;
+            }
+
+            case "channel-message-deleted": {
+              const el = document.getElementById("chmsg-" + msg.messageId);
+              if (el) {
+                const textEl = el.querySelector(".msg-text-content");
+                if (textEl) textEl.textContent = "این پیام حذف شده است";
+              }
+              break;
+            }
 
             case "chat-members": {
               const isAdmin = !!msg.isAdmin;
               const isOwner = !!msg.isOwner;
               const titleEl = document.getElementById("membersModalTitle");
-              titleEl.textContent =
-                activeTargetContact && activeTargetContact.startsWith("group_")
-                  ? "اعضای گروه"
-                  : "اعضای کانال اطلاع‌رسانی";
+              titleEl.textContent = "اعضای گروه";
 
               const container = document.getElementById("membersListContainer");
               container.innerHTML = "";
@@ -2649,49 +3759,8 @@
                   nameSpan.appendChild(tag);
                 }
                 row.appendChild(nameSpan);
-                if (isOwner && !m.isOwner) {
-                  const actions = document.createElement("div");
-                  actions.className = "member-actions";
-
-                  if (m.isAdmin) {
-                    const demoteBtn = document.createElement("button");
-                    demoteBtn.className = "tg-btn member-demote-btn";
-                    demoteBtn.textContent = "عزل از ادمین";
-                    demoteBtn.addEventListener("click", () => {
-                      ws.send(
-                        JSON.stringify({
-                          type: "remove-chat-admin",
-                          chatId: msg.chatId,
-                          member: m.username,
-                        }),
-                      );
-                    });
-                    actions.appendChild(demoteBtn);
-                  } else {
-                    const promoteBtn = document.createElement("button");
-                    promoteBtn.className = "tg-btn member-promote-btn";
-                    promoteBtn.textContent = "ارتقا به ادمین";
-                    promoteBtn.addEventListener("click", () => {
-                      ws.send(
-                        JSON.stringify({
-                          type: "make-chat-admin",
-                          chatId: msg.chatId,
-                          member: m.username,
-                        }),
-                      );
-                    });
-                    actions.appendChild(promoteBtn);
-                  }
-                  row.appendChild(actions);
-                }
                 container.appendChild(row);
               });
-
-              document.getElementById("addMemberRow").style.display =
-                isAdmin || isOwner ? "flex" : "none";
-              document.getElementById("deleteGroupBtn").style.display = isOwner
-                ? "block"
-                : "none";
 
               document.getElementById("membersModal").classList.add("show");
               break;
@@ -2792,8 +3861,9 @@
             case "message-deleted":
               if (
                 msg.targetUser === activeTargetContact ||
-                activeTargetContact.startsWith("group_") ||
-                activeTargetContact.startsWith("announcement_")
+                (activeTargetContact &&
+                  (activeTargetContact.startsWith("group_") ||
+                    activeTargetContact.startsWith("announcement_")))
               ) {
                 const el = document.getElementById("msg-" + msg.messageId);
                 if (el) {
@@ -2977,16 +4047,16 @@
         };
       }
 
-      function normalizeChatItem(c) {
+      function normalizeServerItem(s) {
         return {
-          type: c.type,
-          username: c.id,
-          name: c.name,
-          profilePic: null,
+          type: "server",
+          username: s.id,
+          name: s.name,
+          profilePic: s.icon || null,
           online: true,
           lastSeen: null,
-          lastMessage: c.lastMessage || null,
-          unreadCount: c.unreadCount || 0,
+          lastMessage: null,
+          unreadCount: 0,
         };
       }
 
@@ -3001,19 +4071,19 @@
         renderContacts(contactsCache);
       }
 
-      function setInitialContactsAndChats(contactsArr, chatsArr) {
+      function setInitialContactsAndChats(contactsArr, serversArr) {
         contactsCache = [
           ...(contactsArr || []).map(normalizeContactItem),
-          ...(chatsArr || []).map(normalizeChatItem),
+          ...(serversArr || []).map(normalizeServerItem),
         ];
         sortAndRender();
       }
 
       function replaceDirectContacts(contactsArr) {
-        const chatItems = contactsCache.filter((c) => c.type !== "direct");
+        const serverItems = contactsCache.filter((c) => c.type !== "direct");
         contactsCache = [
           ...(contactsArr || []).map(normalizeContactItem),
-          ...chatItems,
+          ...serverItems,
         ];
         sortAndRender();
       }
@@ -3028,13 +4098,13 @@
         sortAndRender();
       }
 
-      function addOrUpdateChatItem(chat) {
-        let c = findContact(chat.id);
+      function addOrUpdateServerItem(server) {
+        let c = findContact(server.id);
         if (!c) {
-          c = normalizeChatItem(chat);
+          c = normalizeServerItem(server);
           contactsCache.unshift(c);
         } else {
-          Object.assign(c, normalizeChatItem(chat));
+          Object.assign(c, normalizeServerItem(server));
         }
         sortAndRender();
       }
@@ -3055,10 +4125,9 @@
 
       const TAB_TYPE_MAP = {
         direct: "direct",
-        group: "group",
-        announcement: "announcement",
+        server: "server",
       };
-      const CHAT_TYPE_ICON = { direct: "", group: "👥", announcement: "📢" };
+      const CHAT_TYPE_ICON = { direct: "", server: "🖥️" };
 
       function renderContacts(contacts) {
         contactsCache = contacts;
@@ -3079,8 +4148,10 @@
 
         filtered.forEach((c) => {
           const div = document.createElement("div");
-          div.className =
-            "chat-item" + (activeTargetContact === c.username ? " active" : "");
+          const isActive =
+            (c.type === "server" && activeServerId === c.username) ||
+            (c.type === "direct" && activeTargetContact === c.username);
+          div.className = "chat-item" + (isActive ? " active" : "");
 
           const previewText = c.lastMessage
             ? (c.lastMessage.sender === currentUser ? "شما: " : "") +
@@ -3089,7 +4160,7 @@
               ? c.online
                 ? "آنلاین"
                 : formatLastSeenLabel(c.lastSeen)
-              : "";
+              : "سرور";
           const timeText = c.lastMessage
             ? formatRelativeTime(c.lastMessage.timestamp)
             : "";
@@ -3111,14 +4182,22 @@
           </div>
         </div>
       `;
-          div.addEventListener("click", () =>
-            openChat(c.username, c.profilePic),
-          );
+          div.addEventListener("click", () => {
+            if (c.type === "server") {
+              openServer(c.username);
+            } else {
+              openChat(c.username, c.profilePic);
+            }
+          });
           contactsListContainer.appendChild(div);
         });
       }
 
       function openChat(username, profilePic) {
+        document.getElementById("serverView").style.display = "none";
+        activeServerId = null;
+        activeChannelId = null;
+
         chatLoadingOverlay.classList.add("active");
         messagesContainer.innerHTML = "";
 
@@ -3147,16 +4226,6 @@
         activeChatView.style.display = "flex";
         screenMainEl.classList.add("mobile-chat-open");
 
-        const viewMembersBtn = document.getElementById("viewMembersHeaderBtn");
-        if (
-          username.startsWith("announcement_") ||
-          username.startsWith("group_")
-        ) {
-          viewMembersBtn.style.display = "block";
-        } else {
-          viewMembersBtn.style.display = "none";
-        }
-
         ws.send(
           JSON.stringify({ type: "fetch-chat-history", targetUser: username }),
         );
@@ -3170,14 +4239,9 @@
           return;
         }
         activeChatStatusEl.classList.remove("typing-indicator");
-        if (contactItem.type === "direct") {
-          activeChatStatusEl.textContent = contactItem.online
-            ? "آنلاین"
-            : formatLastSeenLabel(contactItem.lastSeen);
-        } else {
-          activeChatStatusEl.textContent =
-            contactItem.type === "announcement" ? "کانال" : "گروه";
-        }
+        activeChatStatusEl.textContent = contactItem.online
+          ? "آنلاین"
+          : formatLastSeenLabel(contactItem.lastSeen);
       }
 
       function clearTypingIndicator() {
@@ -3553,6 +4617,29 @@
         }
       });
 
+      channelMessagesContainer.addEventListener("scroll", () => {
+        if (
+          channelMessagesContainer.scrollTop < 60 &&
+          channelHasMore &&
+          !loadingMoreChannelMessages &&
+          channelOldestMessageId &&
+          activeServerId &&
+          activeChannelId &&
+          ws &&
+          ws.readyState === WebSocket.OPEN
+        ) {
+          loadingMoreChannelMessages = true;
+          ws.send(
+            JSON.stringify({
+              type: "fetch-more-channel-history",
+              serverId: activeServerId,
+              channelId: activeChannelId,
+              beforeMessageId: channelOldestMessageId,
+            }),
+          );
+        }
+      });
+
       window.addEventListener("click", () =>
         document.getElementById("msgContextMenu").classList.remove("show"),
       );
@@ -3574,7 +4661,7 @@
 
       document.getElementById("ctxForward").addEventListener("click", () => {
         if (!selectedMessageForContext) return;
-        const target = prompt("نام کاربری یا گروه مقصد جهت فوروارد:");
+        const target = prompt("نام کاربری یا سرور مقصد جهت فوروارد:");
         if (!target) return;
         ws.send(
           JSON.stringify({
